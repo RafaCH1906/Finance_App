@@ -4,6 +4,7 @@ import '../database/db_helper.dart';
 import '../models/transaction.dart';
 import 'add_transaction_screen.dart';
 import 'summary_screen.dart';
+import 'budget_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,13 +47,21 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6C63FF),
+        backgroundColor: const Color(0xFF1C0EF1),
         title: const Text(
           'Mi Finanzas',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined,
+                color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BudgetScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.bar_chart, color: Colors.white),
             onPressed: () => Navigator.push(
@@ -93,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF6C63FF),
+        backgroundColor: const Color(0xFF1C0EF1),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Agregar', style: TextStyle(fontSize: 15)),
@@ -114,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF),
+        color: const Color(0xFF1C0EF1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
