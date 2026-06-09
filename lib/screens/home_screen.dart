@@ -5,6 +5,7 @@ import '../models/transaction.dart';
 import 'add_transaction_screen.dart';
 import 'summary_screen.dart';
 import 'budget_screen.dart';
+import 'savings_goal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,6 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.savings_outlined, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SavingsGoalScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.account_balance_wallet_outlined,
                 color: Colors.white),
             onPressed: () => Navigator.push(
@@ -74,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           _buildSummaryCard(),
+          _buildQuickActions(),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Align(
@@ -113,6 +122,95 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           _loadTransactions();
         },
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _quickActionCard(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Presupuestos',
+              subtitle: 'Ver y editar límites',
+              color: const Color(0xFF1C0EF1),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BudgetScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _quickActionCard(
+              icon: Icons.savings_outlined,
+              title: 'Metas',
+              subtitle: 'Seguimiento de ahorro',
+              color: const Color(0xFF6C63FF),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SavingsGoalScreen()),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickActionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE7EAF3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

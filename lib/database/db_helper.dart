@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/transaction.dart';
 import '../models/budget.dart';
+import '../models/savings_goal.dart';
 
 class DBHelper {
   static const List<String> defaultCategories = [
@@ -67,6 +68,18 @@ class DBHelper {
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         UNIQUE(category, month, year)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS savings_goals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        current_amount REAL NOT NULL DEFAULT 0,
+        frequency TEXT NOT NULL,
+        auto_amount REAL NOT NULL,
+        start_date TEXT NOT NULL,
+        next_payment_date TEXT
       )
     ''');
 
@@ -179,5 +192,42 @@ class DBHelper {
   static Future<void> deleteBudget(int id) async {
     final db = await database;
     await db.delete('budgets', where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<List<SavingsGoal>> getSavingsGoals() async {
+    final db = await database;
+    final maps = await db.query('savings_goals', orderBy: 'id DESC');
+    return maps.map((m) => SavingsGoal.fromMap(m)).toList();
+  }
+
+  static Future<int> insertSavingsGoal(SavingsGoal goal) async {
+    final db = await database;
+    return db.insert('savings_goals', goal.toMap());
+  }
+
+  static Future<void> updateSavingsGoal(SavingsGoal goal) async {
+    final db = await database;
+    await db.update(
+      'savings_goals',
+      goal.toMap(),
+      where: 'id = ?',
+      whereArgs: [goal.id],
+    );
+  }
+
+  static Future<void> deleteSavingsGoal(int id) async {
+    final db = await database;
+    await db.delete('savings_goals', where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<List<SavingsGoal>> getPendingGoals() async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    final maps = await db.query(
+      'savings_goals',
+      where: 'next_payment_date <= ? AND current_amount < target_amount',
+      whereArgs: [now],
+    );
+    return maps.map((m) => SavingsGoal.fromMap(m)).toList();
   }
 }
