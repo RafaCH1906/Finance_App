@@ -271,7 +271,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6C63FF),
+        backgroundColor: const Color(0xFF1C0EF1),
         foregroundColor: Colors.white,
         title: const Text('Nueva transacción'),
         elevation: 0,
@@ -325,7 +325,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     const Icon(
                       Icons.calendar_today,
                       size: 18,
-                      color: Color(0xFF6C63FF),
+                      color: Color(0xFF1C0EF1),
                     ),
                     const SizedBox(width: 10),
                     Text(
@@ -341,7 +341,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6C63FF),
+                  backgroundColor: const Color(0xFF1C0EF1),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

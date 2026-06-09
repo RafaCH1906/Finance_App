@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/transaction.dart';
+import '../models/budget.dart';
 
 class DBHelper {
   static const List<String> defaultCategories = [
@@ -55,6 +56,17 @@ class DBHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL COLLATE NOCASE UNIQUE,
         is_custom INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS budgets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        limit_amount REAL NOT NULL,
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        UNIQUE(category, month, year)
       )
     ''');
 
@@ -143,5 +155,29 @@ class DBHelper {
   static Future<int> deleteTransaction(int id) async {
     final db = await database;
     return db.delete('transactions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<List<Budget>> getBudgets(int month, int year) async {
+    final db = await database;
+    final maps = await db.query(
+      'budgets',
+      where: 'month = ? AND year = ?',
+      whereArgs: [month, year],
+    );
+    return maps.map((m) => Budget.fromMap(m)).toList();
+  }
+
+  static Future<void> upsertBudget(Budget budget) async {
+    final db = await database;
+    await db.insert(
+      'budgets',
+      budget.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<void> deleteBudget(int id) async {
+    final db = await database;
+    await db.delete('budgets', where: 'id = ?', whereArgs: [id]);
   }
 }

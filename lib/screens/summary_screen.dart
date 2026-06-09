@@ -85,7 +85,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6C63FF),
+        backgroundColor: const Color(0xFF1C0EF1),
         foregroundColor: Colors.white,
         title: const Text('Resumen mensual'),
         elevation: 0,
@@ -152,7 +152,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF),
+        color: const Color(0xFF1C0EF1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
