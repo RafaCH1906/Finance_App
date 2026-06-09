@@ -14,19 +14,105 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   String _type = 'expense';
-  String _category = 'Comida';
+  String _category = DBHelper.defaultCategories.first;
   DateTime _date = DateTime.now();
+  List<String> _customCategories = [];
 
-  final List<String> _categories = [
-    'Comida',
-    'Transporte',
-    'Entretenimiento',
-    'Salud',
-    'Educación',
-    'Servicios',
-    'Ropa',
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomCategories();
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final savedCategories = await DBHelper.getSavedCategories();
+    if (!mounted) return;
+    setState(() {
+      _customCategories = savedCategories;
+      if (!_allCategories.contains(_category)) {
+        _category = DBHelper.defaultCategories.first;
+      }
+    });
+  }
+
+  List<String> get _allCategories => [
+    ...DBHelper.defaultCategories,
+    ..._customCategories,
     'Otros',
   ];
+
+  Future<String?> _askForCustomCategory() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nueva categoría'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            hintText: 'Escribe el nombre de la categoría',
+          ),
+          onSubmitted: (_) {
+            Navigator.pop(context, controller.text);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    // Do not explicitly dispose the controller here. Let garbage collection
+    // reclaim it after the dialog is removed from the tree to avoid
+    // disposing while Flutter still has dependents attached to the widget.
+    return result;
+  }
+
+  Future<void> _handleCategoryChanged(String? value) async {
+    if (value == null) return;
+
+    if (value != 'Otros') {
+      setState(() => _category = value);
+      return;
+    }
+
+    final newCategoryName = await _askForCustomCategory();
+    if (newCategoryName == null) {
+      if (!mounted) return;
+      setState(() => _category = DBHelper.defaultCategories.first);
+      return;
+    }
+
+    final savedCategory = await DBHelper.addCustomCategory(newCategoryName);
+    if (savedCategory == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre de categoría válido')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        if (!_customCategories.contains(savedCategory)) {
+          _customCategories = [..._customCategories, savedCategory]
+            ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+        }
+        _category = savedCategory;
+      });
+    });
+  }
 
   Future<int?> _pickYear() async {
     final currentYear = DateTime.now().year;
@@ -85,6 +171,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
+  Future<DateTime?> _showDatePicker({
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+  }) {
+    return showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDatePickerMode: DatePickerMode.day,
+    );
+  }
+
   Future<void> _pickDate() async {
     final selectedYear = await _pickYear();
     if (selectedYear == null) return;
@@ -110,15 +210,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       initialDate = lastDate;
     }
 
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await _showDatePicker(
       initialDate: initialDate,
       firstDate: firstDate,
       lastDate: lastDate,
-      initialDatePickerMode: DatePickerMode.day,
     );
 
     if (picked == null) return;
+    if (!mounted) return;
 
     setState(() {
       _date = picked;
@@ -303,7 +402,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? color.withOpacity(0.15) : Colors.white,
+            color: selected ? color.withValues(alpha: 0.15) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected ? color : Colors.grey.shade300,
@@ -335,10 +434,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         child: DropdownButton<String>(
           value: _category,
           isExpanded: true,
-          items: _categories
+          items: _allCategories
               .map((c) => DropdownMenuItem(value: c, child: Text(c)))
               .toList(),
-          onChanged: (v) => setState(() => _category = v!),
+          onChanged: _handleCategoryChanged,
         ),
       ),
     );

@@ -3,6 +3,16 @@ import 'package:path/path.dart';
 import '../models/transaction.dart';
 
 class DBHelper {
+  static const List<String> defaultCategories = [
+    'Comida',
+    'Transporte',
+    'Entretenimiento',
+    'Salud',
+    'Educación',
+    'Servicios',
+    'Ropa',
+  ];
+
   static Database? _db;
 
   static Future<Database> get database async {
@@ -15,7 +25,7 @@ class DBHelper {
     final path = join(await getDatabasesPath(), 'finance.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await _ensureSchema(db);
       },
@@ -37,6 +47,14 @@ class DBHelper {
         type TEXT NOT NULL,
         category TEXT NOT NULL,
         date TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+        is_custom INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -62,7 +80,55 @@ class DBHelper {
         "ALTER TABLE transactions ADD COLUMN date TEXT NOT NULL DEFAULT '2026-01-01T00:00:00.000'",
       );
     }
+
+    await _ensureDefaultCategories(db);
   }
+
+  static Future<void> _ensureDefaultCategories(Database db) async {
+    for (final category in defaultCategories) {
+      await db.insert(
+        'categories',
+        {'name': category, 'is_custom': 0},
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+  }
+
+  static Future<List<String>> getSavedCategories() async {
+    final db = await database;
+    final rows = await db.query(
+      'categories',
+      columns: ['name'],
+      where: 'is_custom = ?',
+      whereArgs: [1],
+      orderBy: 'name COLLATE NOCASE ASC',
+    );
+    return rows.map((row) => row['name'].toString()).toList();
+  }
+
+  static Future<String?> addCustomCategory(String categoryName) async {
+    final normalized = categoryName.trim();
+    if (normalized.isEmpty) return null;
+
+    final db = await database;
+    await db.insert(
+      'categories',
+      {'name': normalized, 'is_custom': 1},
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+
+    final rows = await db.query(
+      'categories',
+      columns: ['name'],
+      where: 'name = ? COLLATE NOCASE',
+      whereArgs: [normalized],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+    return rows.first['name'].toString();
+  }
+
   static Future<int> insertTransaction(AppTransaction t) async {
     final db = await database;
     return db.insert('transactions', t.toMap());
