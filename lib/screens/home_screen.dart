@@ -16,6 +16,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<AppTransaction> _transactions = [];
+  static const int _pageSize = 10;
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -25,8 +27,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadTransactions() async {
     final data = await DBHelper.getTransactions();
-    setState(() => _transactions = data);
+    if (!mounted) return;
+    setState(() {
+      _transactions = data;
+      final maxPage = (_transactions.length - 1) ~/ _pageSize;
+      if (_currentPage > maxPage) {
+        _currentPage = maxPage < 0 ? 0 : maxPage;
+      }
+    });
   }
+
+  List<AppTransaction> get _visibleTransactions => _transactions
+      .skip(_currentPage * _pageSize)
+      .take(_pageSize)
+      .toList();
+
+  bool get _hasMoreTransactions =>
+      (_currentPage + 1) * _pageSize < _transactions.length;
 
   double get _totalIncome => _transactions
       .where((t) => t.type == 'income')
@@ -48,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1C0EF1),
+          backgroundColor: const Color(0xFF1C0EF1),
         title: const Text(
           'Mi Finanzas',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -102,15 +119,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _transactions.length,
-                    itemBuilder: (ctx, i) =>
-                        _buildTransactionTile(_transactions[i]),
+                    padding: const EdgeInsets.only(bottom: 80),
+                    itemCount: _visibleTransactions.length +
+                        (_hasMoreTransactions ? 1 : 0),
+                    itemBuilder: (ctx, i) {
+                      if (i < _visibleTransactions.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildTransactionTile(_visibleTransactions[i]),
+                        );
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _currentPage++;
+                              });
+                            },
+                            child: const Text('Ver más transacciones'),
+                          ),
+                        ),
+                      );
+                    },
                   ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'home_add_transaction_fab',
         backgroundColor: const Color(0xFF1C0EF1),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
