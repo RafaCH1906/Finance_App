@@ -7,34 +7,42 @@ class SavingsService {
     final goals = await DBHelper.getPendingGoals();
 
     for (final goal in goals) {
-      final abono = goal.autoAmount.clamp(0.0, goal.remaining);
-      final newAmount = goal.currentAmount + abono;
-      final nextDate = goal.calculateNextDate(DateTime.now());
+      var currentGoal = goal;
 
-      // Registra como gasto en transacciones
-      final transaction = AppTransaction(
-        title: 'Ahorro automático - ${goal.name}',
-        amount: abono,
-        type: 'expense',
-        category: 'Ahorro',
-        date: DateTime.now(),
-      );
-      await DBHelper.insertTransaction(transaction);
+      while (!currentGoal.isCompleted &&
+          currentGoal.nextPaymentDate != null &&
+          !currentGoal.nextPaymentDate!.isAfter(DateTime.now())) {
+        final abono = currentGoal.autoAmount.clamp(0.0, currentGoal.remaining);
+        final abonoDate = currentGoal.nextPaymentDate!;
+        final newAmount = currentGoal.currentAmount + abono;
+        final nextDate = currentGoal.calculateNextDate(abonoDate);
 
-      // Actualiza la meta
-      final updated = goal.copyWith(
-        currentAmount: newAmount,
-        nextPaymentDate: newAmount >= goal.targetAmount ? null : nextDate,
-      );
-      await DBHelper.updateSavingsGoal(updated);
+        final transaction = AppTransaction(
+          title: 'Ahorro automático - ${currentGoal.name}',
+          amount: abono,
+          type: 'expense',
+          category: 'Ahorro',
+          date: abonoDate,
+        );
+        await DBHelper.insertTransaction(transaction);
 
-      // Envía notificación
-      await NotificationService.showSavingsNotification(
-        goalName: goal.name,
-        amount: abono,
-        currentAmount: newAmount,
-        targetAmount: goal.targetAmount,
-      );
+        currentGoal = currentGoal.copyWith(
+          currentAmount: newAmount,
+          nextPaymentDate: newAmount >= currentGoal.targetAmount
+              ? null
+              : nextDate,
+        );
+        await DBHelper.updateSavingsGoal(currentGoal);
+      }
+
+      if (currentGoal.currentAmount > goal.currentAmount) {
+        await NotificationService.showSavingsNotification(
+          goalName: goal.name,
+          amount: currentGoal.currentAmount - goal.currentAmount,
+          currentAmount: currentGoal.currentAmount,
+          targetAmount: goal.targetAmount,
+        );
+      }
     }
   }
 }

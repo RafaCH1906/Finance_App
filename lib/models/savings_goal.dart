@@ -3,7 +3,7 @@ class SavingsGoal {
   final String name;
   final double targetAmount;
   final double currentAmount;
-  final String frequency;  // 'daily', 'weekly', 'biweekly', 'monthly'
+  final String frequency; // 'daily', 'weekly', 'biweekly', 'monthly'
   final double autoAmount;
   final DateTime startDate;
   final DateTime? nextPaymentDate;
@@ -21,15 +21,21 @@ class SavingsGoal {
 
   double get progress => (currentAmount / targetAmount).clamp(0.0, 1.0);
   bool get isCompleted => currentAmount >= targetAmount;
-  double get remaining => (targetAmount - currentAmount).clamp(0.0, double.infinity);
+  double get remaining =>
+      (targetAmount - currentAmount).clamp(0.0, double.infinity);
 
   DateTime calculateNextDate(DateTime from) {
     switch (frequency) {
-      case 'daily':    return from.add(const Duration(days: 1));
-      case 'weekly':   return from.add(const Duration(days: 7));
-      case 'biweekly': return from.add(const Duration(days: 15));
-      case 'monthly':  return DateTime(from.year, from.month + 1, from.day);
-      default:         return from.add(const Duration(days: 7));
+      case 'daily':
+        return from.add(const Duration(days: 1));
+      case 'weekly':
+        return from.add(const Duration(days: 7));
+      case 'biweekly':
+        return from.add(const Duration(days: 15));
+      case 'monthly':
+        return DateTime(from.year, from.month + 1, from.day);
+      default:
+        return from.add(const Duration(days: 7));
     }
   }
 
@@ -75,10 +81,7 @@ class SavingsGoal {
     );
   }
 
-  SavingsGoal copyWith({
-    double? currentAmount,
-    DateTime? nextPaymentDate,
-  }) {
+  SavingsGoal copyWith({double? currentAmount, DateTime? nextPaymentDate}) {
     return SavingsGoal(
       id: id,
       name: name,
@@ -88,6 +91,20 @@ class SavingsGoal {
       autoAmount: autoAmount,
       startDate: startDate,
       nextPaymentDate: nextPaymentDate ?? this.nextPaymentDate,
+    );
+  }
+
+  SavingsGoal withResetSchedule() {
+    final baseDate = DateTime.now();
+    return SavingsGoal(
+      id: id,
+      name: name,
+      targetAmount: targetAmount,
+      currentAmount: 0,
+      frequency: frequency,
+      autoAmount: autoAmount,
+      startDate: startDate,
+      nextPaymentDate: calculateNextDate(baseDate),
     );
   }
 }
